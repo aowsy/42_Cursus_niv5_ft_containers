@@ -1,38 +1,45 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   reverse_iterator.hpp                               :+:      :+:    :+:   */
+/*   random_access_iterator.hpp                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: mdelforg <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/01/12 16:25:53 by mdelforg          #+#    #+#             */
-/*   Updated: 2023/01/13 10:22:50 by mdelforg         ###   ########.fr       */
+/*   Created: 2023/01/12 11:16:07 by mdelforg          #+#    #+#             */
+/*   Updated: 2023/01/13 10:23:11 by mdelforg         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef _REVERSE_ITERATOR_HPP_
-# define _REVERSE_ITERATOR_HPP_
+#ifndef _RANDOM_ACCESS_ITERATOR_HPP_
+# define _RANDOM_ACCESS_ITERATOR_HPP_
 
 # include "iterator_traits.hpp"
 
 namespace ft
 {
-	template <class Iterator>
-	class reverse_iterator
+
+	template <class T>
+	class random_access_iterator : public ft::iterator<std::random_access_iterator_tag, T>
 	{
 
 		public :
 
-			typedef				Iterator										iterator_type;
-			typedef typename	iterator_traits<Iterator>::iterator_category	iterator_category;
-			typedef typename	iterator_traits<Iterator>::value_type			value_type;
-			typedef typename	iterator_traits<Iterator>::difference_type		difference_type;
-			typedef typename	iterator_traits<Iterator>::pointer				pointer;
-			typedef typename	iterator_traits<Iterator>::reference			reference;
+		/* ---------------------------------------------------------------- */
+		/*                                                                  */
+		/*                          MEMBER TYPES                            */
+		/*																	*/
+		/* ---------------------------------------------------------------- */
+			typedef typename ft::iterator<ft::random_access_iterator_tag, T>::value_type		value_type;
+			typedef typename ft::iterator<ft::random_access_iterator_tag, T>::iterator_category	iterator_category;
+			typedef typename ft::iterator<ft::random_access_iterator_tag, T>::difference_type	difference_type;
+			typedef typename ft::iterator<ft::random_access_iterator_tag, T>::pointer			pointer;
+			typedef typename ft::iterator<ft::random_access_iterator_tag, T>::reference			reference;
+
 
 		protected :
 
-			iterator_type	_current;
+			pointer	_ptr;
+
 
 		public :
 
@@ -42,14 +49,13 @@ namespace ft
 		/*																	*/
 		/* ---------------------------------------------------------------- */
 		// default
-			reverse_iterator() : _current(NULL) {}
+			random_access_iterator() : _ptr(NULL) {}
 
-		// initialisation
-			explicit reverse_iterator(iterator_type it) : _current(it) {}
+		// by pointer
+			random_access_iterator(pointer ptr) : _ptr(ptr) {}
 
 		// copy
-			template <class Iter>
-			reverse_iterator(const reverse_iterator<Iter> &rev_it) : _current(rev_it.base()) {}
+			random_access_iterator(const random_access_iterator & src) : _ptr(src._ptr) {}
 
 
 		/* ---------------------------------------------------------------- */
@@ -57,20 +63,19 @@ namespace ft
 		/*                          DESTRUCTOR                              */
 		/*																	*/
 		/* ---------------------------------------------------------------- */
-			~reverse_iterator() {}
+			~random_access_iterator() {}
 
 
 		/* ---------------------------------------------------------------- */
 		/*                                                                  */
 		/*                          ASSIGN OPERATOR                         */
-		/*																	*/
+		/*                                                                  */
 		/* ---------------------------------------------------------------- */
-			reverse_iterator	&operator=(const reverse_iterator &rhs)
+			random_access_iterator	& operator=(const random_access_iterator & rhs)
 			{
-				this->_current = rhs._current;
+				this->_ptr = rhs._ptr;
 				return (*this);
 			}
-
 
 		/* ---------------------------------------------------------------- */
 		/*                                                                  */
@@ -78,21 +83,24 @@ namespace ft
 		/*                                                                  */
 		/* ---------------------------------------------------------------- */
 		// base
-			iterator_type	base() const
+			const pointer	&base() const
 			{
-				return (this->_current);
+				return (this->_ptr);
 			}
 
-		// dereference '*'
+		// casting to const
+			operator	random_access_iterator<const T>() const
+			{
+				return (this->_ptr);
+			}
+
+		// dereference
 			reference	operator*() const
 			{
-				iterator_type	tmp = this->_current;
-				--tmp;
-				return (*tmp);
+				return (*this->_ptr);
 			}
 
-		// dereference '->'
-			pointer	operator->() const
+			reference	operator->() const
 			{
 				return (&(operator*()));
 			}
@@ -100,62 +108,62 @@ namespace ft
 		// offset operator
 			reference	operator[](difference_type n) const
 			{
-				return (*(*this + n));
+				return (this->_ptr[n]);
 			}
 
 		// pre-increment
-			reverse_iterator &operator++()
+			random_access_iterator	&operator++()
 			{
-				this->_current--;
+				this->_ptr++;
 				return (*this);
 			}
 
 		// post-increment
-			reverse_iterator	operator++(int)
+			random_access_iterator	operator++(int)
 			{
-				reverse_iterator	tmp = *this;
-				this->_current--;
+				random_access_iterator	tmp(*this);
+				operator++();
 				return (tmp);
 			}
 
 		// pre-decrement
-			reverse_iterator	&operator--()
+			random_access_iterator	&operator--()
 			{
-				this->_current++;
+				this->_ptr--;
 				return (*this);
 			}
 
 		// post-decrement
-			reverse_iterator	operator--(int)
+			random_access_iterator	operator--(int)
 			{
-				reverse_iterator	tmp = *this;
-				this->_current++;
+				random_access_iterator	tmp(*this);
+				operator--();
 				return (tmp);
 			}
 
 		// arithmetic '+'
-			reverse_iterator	operator+(difference_type n) const
+			random_access_iterator	operator+(difference_type n) const
 			{
-				return (reverse_iterator(this->_current - n));
+				return (random_access_iterator(this->_ptr + n));
 			}
 
 		// arithmetic '-'
-			reverse_iterator	operator-(difference_type n) const
+			random_access_iterator	operator-(difference_type n) const
 			{
-				return (reverse_iterator(this->_current + n));
+				return (random_access_iterator(this->_ptr - n));
 			}
 
 		// assignment '+='
-			reverse_iterator	&operator+=(difference_type n)
+			random_access_iterator	&operator+=(difference_type n)
 			{
-				this->_current -= n;
+				this->_ptr += n;
 				return (*this);
 			}
 
 		// assignment '-='
-			reverse_iterator	&operator-=(difference_type n)
+			random_access_iterator	&operator-=(difference_type n)
 			{
-				this->_current += n;
+				this->_ptr -= n;
 				return (*this);
 			}
 
@@ -168,60 +176,59 @@ namespace ft
 /* ---------------------------------------------------------------- */
 // comparison '=='
 	template <typename IteratorL, typename IteratorR>
-	bool	operator==(const reverse_iterator<IteratorL> &lhs, const reverse_iterator<IteratorR> &rhs)
+	bool	operator==(const random_access_iterator<IteratorL> &lhs, const random_access_iterator<IteratorR> &rhs)
 	{
 		return (lhs.base() == rhs.base());
 	}
 
 // comparison '!='
 	template <typename IteratorL, typename IteratorR>
-	bool	operator!=(const reverse_iterator<IteratorL> &lhs, const reverse_iterator<IteratorR> &rhs)
+	bool	operator!=(const random_access_iterator<IteratorL> &lhs, const random_access_iterator<IteratorR> &rhs)
 	{
-		return (lhs.base() != rhs.base());
+		return (!(lhs.base() == rhs.base()));
 	}
 
 // comparison '<'
 	template <typename IteratorL, typename IteratorR>
-	bool	operator<(const reverse_iterator<IteratorL> &lhs, const reverse_iterator<IteratorR> &rhs)
+	bool	operator<(const random_access_iterator<IteratorL> &lhs, const random_access_iterator<IteratorR> &rhs)
 	{
 		return (lhs.base() < rhs.base());
 	}
 
 // comparison '>'
 	template <typename IteratorL, typename IteratorR>
-	bool	operator>(const reverse_iterator<IteratorL> &lhs, const reverse_iterator<IteratorR> &rhs)
+	bool	operator>(const random_access_iterator<IteratorL> &lhs, const random_access_iterator<IteratorR> &rhs)
 	{
 		return (lhs.base() > rhs.base());
 	}
 
 // comparison '<='
 	template <typename IteratorL, typename IteratorR>
-	bool	operator<=(const reverse_iterator<IteratorL> &lhs, const reverse_iterator<IteratorR> &rhs)
+	bool	operator<=(const random_access_iterator<IteratorL> &lhs, const random_access_iterator<IteratorR> &rhs)
 	{
-		return (lhs.base() <= rhs.base());
+		return (!(lhs.base() < rhs.base()));
 	}
 
 // comparison '>='
 	template <typename IteratorL, typename IteratorR>
-	bool	operator>=(const reverse_iterator<IteratorL> &lhs, const reverse_iterator<IteratorR> &rhs)
+	bool	operator>=(const random_access_iterator<IteratorL> &lhs, const random_access_iterator<IteratorR> &rhs)
 	{
-		return (lhs.base() >= rhs.base());
+		return (!(lhs.base() > rhs.base()));
 	}
 
 // arithmetic '+'
 	template <typename Iterator>
-	reverse_iterator<Iterator>	operator+(typename reverse_iterator<Iterator>::difference_type n, const reverse_iterator<Iterator> &rhs)
+	random_access_iterator<Iterator>	operator+(typename random_access_iterator<Iterator>::difference_type n, const random_access_iterator<Iterator> &rhs)
 	{
 		return (rhs.base() + n);
 	}
 
 // arithmetic '-'
 	template <typename IteratorL, typename IteratorR>
-	typename reverse_iterator<IteratorL>::difference_type	operator-(const reverse_iterator<IteratorL> &lhs, const reverse_iterator<IteratorR> &rhs)
+	typename random_access_iterator<IteratorL>::difference_type	operator-(const random_access_iterator<IteratorL> &lhs, const random_access_iterator<IteratorR> &rhs)
 	{
 		return (lhs.base() - rhs.base());
 	}
-
 }
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: mdelforg <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/02 11:10:56 by mdelforg          #+#    #+#             */
-/*   Updated: 2022/12/22 15:09:07 by mdelforg         ###   ########.fr       */
+/*   Updated: 2023/01/21 18:12:28 by mdelforg         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,8 +83,14 @@ namespace ft
 
 		// range
 			template <class InputIterator>
-			vector(InputIterator first, InputIterator last, const allocator_type &alloc = allocator_type()) : _alloc(alloc), _size(ft::distance(first, last)), _capacity(this->_size)
+			vector(InputIterator first, InputIterator last, const allocator_type &alloc = allocator_type(),
+			typename ft::enable_if<!ft::is_integral<InputIterator>::value>::type* = NULL) : _alloc(alloc)
 			{
+				size_type	tmp_size = 0;
+				for (InputIterator i = first; i != last; i++)
+					tmp_size++;
+				this->_size = tmp_size;
+				this->_capacity = this->_size;
 				this->_ptr = _alloc.allocate(this->_capacity);
 				for (size_type i = 0; i < this->_capacity; i++)
 					this->_alloc.construct(&this->_ptr[i], *first++);
@@ -204,10 +210,12 @@ namespace ft
 				else if (n < this->_size)
 					this->erase(this->begin() + n, this->end());
 				else
-					insert(&this->_ptr[this->_size], n - this->_size, val);
-				this->_size = n;
+				{
+					if (this->_capacity < n)
+						this->reserve(n);
+					insert(this->end(), n - this->_size, val);
+				}
 			}
-
 
 		// capacity
 			size_type	capacity() const
@@ -307,13 +315,16 @@ namespace ft
 			void	assign(InputIterator first, InputIterator last,
 			typename ft::enable_if<!ft::is_integral<InputIterator>::value>::type* = NULL)
 			{
-				if (this->_capacity < ft::distance(first, last))
-					this->reserve(ft::distance(first, last));
+				size_type	distance = 0;
+				for (InputIterator i = first; i != last; i++)
+					distance++;
+				if (this->_capacity < distance)
+					this->reserve(distance);
 				this->clear();
-				this->_size = ft::distance(first, last);
+				this->_size = distance;
 				for (size_type i = 0; i < this->_size; i++)
 				{
-					this->_alloc.construct(&this->_ptr[i], first);
+					this->_alloc.construct(&this->_ptr[i], *first);
 					first++;
 				}
 			}
@@ -373,44 +384,57 @@ namespace ft
 
 			void	insert(iterator position, size_type n, const value_type &val)
 			{
-				if (this->_capacity == 0)
-					this->reserve(n);
-				else if (this->_size + n > this->capacity())
+				size_type	distance = 0;
+				for (iterator i = this->begin(); i != position; i++)
+					distance++;
+
+				if (this->_size + n > this->_capacity)
 					this->reserve(this->_size + n);
-				size_type dist = ft::distance(this->begin(), position);
-				for (size_type i = this->_size - 1; i > dist; i--)
+
+				if (this->_size == 0)
 				{
-					this->_alloc.construct(&this->_ptr[i] + n, this->_ptr[i]);
-					this->_alloc.destroy(&this->_ptr[dist]);
+					for (size_type i = 0; i < n; i++)
+						this->_alloc.construct(&this->_ptr[i], val);
 				}
-				for (size_type i = 0; i < n; i++)
-					this->_alloc.construct(&this->_ptr[dist + i], val);
+
+				else
+				{
+					for (size_type i = this->_size - 1; i > distance; i--)
+					{
+						this->_alloc.construct(&this->_ptr[i] + n, this->_ptr[i]);
+						this->_alloc.destroy(&this->_ptr[distance]);
+					}
+					for (size_type i = 0; i < n; i++)
+						this->_alloc.construct(&this->_ptr[distance + i], val);
+				}
 				this->_size += n;
 			}
-
 
 			template <class InputIterator>
 			void	insert(iterator position, InputIterator first, InputIterator last,
 			typename ft::enable_if<!ft::is_integral<InputIterator>::value>::type* = NULL)
 			{
-				size_type	distance = static_cast<unsigned int>(ft::distance(first, last));
-				if (this->_capacity < this->_size + distance)
+				size_type	distance = 0;
+				for (InputIterator i = first; i != last; i++)
+					distance++;
+				size_type	index = 0;
+				for (iterator i = this->begin(); i != position; i++)
+					index++;
+
+				if (this->_size + distance > this->_capacity)
+					this->reserve(this->_size + distance);
+
+				iterator	new_pos = this->begin() + index;
+				for (size_type i = 0; i < this->_size - index; i++)
 				{
-					if (this->_capacity * 2 < this->_size + distance)
-						this->reserve(this->_size + distance);
-					else
-						this->reserve(this->_capacity * 2);
-				}
-				for (iterator tmp_iter = this->end(); tmp_iter != position; tmp_iter--)
-				{
-					this->_alloc.construct(&(*(tmp_iter + distance)), *tmp_iter);
-					this->_alloc.destroy(&(*tmp_iter));
+					this->_alloc.construct(&this->_ptr[this->_size + distance - i], this->_ptr[this->_size - i - 1]);
+					this->_alloc.destroy(&this->_ptr[this->_size - i - 1]);
 				}
 				while (first < last)
 				{
-					this->_alloc.construct(&(*position), *(&(*first)));
+					this->_alloc.construct(&(*new_pos), *(&(*first)));
 					first++;
-					position++;
+					new_pos++;
 				}
 				this->_size += distance;
 			}
@@ -434,8 +458,10 @@ namespace ft
 			iterator	erase(iterator first, iterator last)
 			{
 				iterator	rtn_iter = first;
-				size_type	distance = ft::distance(first, last);
+				size_type	distance = 0;
 
+				for (iterator i = first; i != last; i++)
+					distance++;
 				while (last > first)
 				{
 					for (iterator tmp_itr = first; tmp_itr < this->end(); tmp_itr++)
@@ -493,14 +519,48 @@ namespace ft
 				return (this->_alloc);
 			}
 
+
+
+		private :
+
+		/* ---------------------------------------------------------------- */
+		/*                                                                  */
+		/*                          OVERLOAD OPERATORS                      */
+		/*                                                                  */
+		/* ---------------------------------------------------------------- */
+		// comparison '=='
+			template <class T2, class Alloc2>
+			friend bool	operator==(const vector<T2, Alloc2> &lhs, const vector<T2, Alloc2> &rhs);
+
+		// comparison '!='
+			template <class T2, class Alloc2>
+			friend bool	operator!=(const vector<T2, Alloc2> &lhs, const vector<T2, Alloc2> &rhs);
+
+		// comparison '<'
+			template <class T2, class Alloc2>
+			friend bool	operator<(const vector<T2, Alloc2> &lhs, const vector<T2, Alloc2> &rhs);
+
+		// comparison '<='
+			template <class T2, class Alloc2>
+			friend bool	operator<=(const vector<T2, Alloc2> &lhs, const vector<T2, Alloc2> &rhs);
+
+		// comparison '>'
+			template <class T2, class Alloc2>
+			friend bool	operator>(const vector<T2, Alloc2> &lhs, const vector<T2, Alloc2> &rhs);
+
+		// comparison '>='
+			template <class T2, class Alloc2>
+			friend bool	operator>=(const vector<T2, Alloc2> &lhs, const vector<T2, Alloc2> &rhs);
+
 	};
 
 
 /* ---------------------------------------------------------------- */
 /*                                                                  */
-/*                          ALLOCATOR                               */
+/*                          COMPARISON OPERATORS                    */
 /*                                                                  */
 /* ---------------------------------------------------------------- */
+// comparison '=='
 	template <class T, class Alloc>
 	bool	operator==(const vector<T, Alloc> &lhs, const vector<T, Alloc> &rhs)
 	{
@@ -509,30 +569,35 @@ namespace ft
 		return (ft::equal(lhs.begin(), lhs.end(), rhs.begin()));
 	}
 
+// comparison '!='
 	template <class T, class Alloc>
 	bool	operator!=(const vector<T, Alloc> &lhs, const vector<T, Alloc> &rhs)
 	{
 		return (!(lhs == rhs));
 	}
 
+// comparison '<'
 	template <class T, class Alloc>
 	bool	operator<(const vector<T, Alloc> &lhs, const vector<T, Alloc> &rhs)
 	{
 		return (ft::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end()));
 	}
 
+// comparison '<='
 	template <class T, class Alloc>
 	bool	operator<=(const vector<T, Alloc> &lhs, const vector<T, Alloc> &rhs)
 	{
 		return (!(rhs < lhs));
 	}
 
+// comparison '>'
 	template <class T, class Alloc>
 	bool	operator>(const vector<T, Alloc> &lhs, const vector<T, Alloc> &rhs)
 	{
 		return (rhs < lhs);
 	}
 
+// comparison '>='
 	template <class T, class Alloc>
 	bool	operator>=(const vector<T, Alloc> &lhs, const vector<T, Alloc> &rhs)
 	{
