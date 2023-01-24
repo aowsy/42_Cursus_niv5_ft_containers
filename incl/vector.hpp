@@ -6,7 +6,7 @@
 /*   By: mdelforg <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/02 11:10:56 by mdelforg          #+#    #+#             */
-/*   Updated: 2023/01/21 18:12:28 by mdelforg         ###   ########.fr       */
+/*   Updated: 2023/01/24 14:30:40 by mdelforg         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@
 # include <stdexcept>
 # include <algorithm>
 
+//	#include "rdm.hpp"
+//	#include "rvs.hpp"
 # include "random_access_iterator.hpp"
 # include "reverse_iterator.hpp"
 # include "utils.hpp"
@@ -366,47 +368,42 @@ namespace ft
 		// insert
 			iterator	insert(iterator position, const value_type &val)
 			{
-				if (this->_capacity == 0)
-					this->reserve(1);
-				else if (this->_size == this->_capacity)
-					this->reserve(this->_capacity * 2);
+				size_type	index = 0;
+				for (iterator i = this->begin(); i != position; i++)
+					index++;
 
-				for (size_type i = this->_size - 1; &this->_ptr[i] >= &(*position); i--)
+				if (this->_size == this->_capacity)
+					this->reserve(this->_size + 1);
+
+				position = this->begin() + index;
+				for (iterator i = this->end() - 1; i >= position; i--)
 				{
-					this->_alloc.construct(&this->_ptr[i + 1], this->_ptr[i]);
-					this->_alloc.destroy(&this->_ptr[i]);
+					this->_alloc.construct(&(*(i + 1)), *i);
+					this->_alloc.destroy(&(*i));
 				}
 
-				this->_alloc.construct(&(*position), val);
+				this->_alloc.construct(&this->_ptr[index], val);
 				this->_size++;
-				return (this->_ptr);
+				return (&this->_ptr[index]);
 			}
 
 			void	insert(iterator position, size_type n, const value_type &val)
 			{
-				size_type	distance = 0;
+				size_type	index = 0;
 				for (iterator i = this->begin(); i != position; i++)
-					distance++;
+					index++;
 
 				if (this->_size + n > this->_capacity)
 					this->reserve(this->_size + n);
 
-				if (this->_size == 0)
+				position = this->begin() + index;
+				for (iterator i = this->end() - 1; i >= position; i--)
 				{
-					for (size_type i = 0; i < n; i++)
-						this->_alloc.construct(&this->_ptr[i], val);
+					this->_alloc.construct(&(*(i + n)), *i);
+					this->_alloc.destroy(&(*i));
 				}
-
-				else
-				{
-					for (size_type i = this->_size - 1; i > distance; i--)
-					{
-						this->_alloc.construct(&this->_ptr[i] + n, this->_ptr[i]);
-						this->_alloc.destroy(&this->_ptr[distance]);
-					}
-					for (size_type i = 0; i < n; i++)
-						this->_alloc.construct(&this->_ptr[distance + i], val);
-				}
+				for (size_type i = 0; i < n; i++)
+					this->_alloc.construct(&this->_ptr[index + i], val);
 				this->_size += n;
 			}
 
@@ -417,6 +414,7 @@ namespace ft
 				size_type	distance = 0;
 				for (InputIterator i = first; i != last; i++)
 					distance++;
+
 				size_type	index = 0;
 				for (iterator i = this->begin(); i != position; i++)
 					index++;
@@ -424,17 +422,17 @@ namespace ft
 				if (this->_size + distance > this->_capacity)
 					this->reserve(this->_size + distance);
 
-				iterator	new_pos = this->begin() + index;
-				for (size_type i = 0; i < this->_size - index; i++)
+				position = this->begin() + index;
+
+				for (iterator i = this->end() - 1; i >= position; i--)
 				{
-					this->_alloc.construct(&this->_ptr[this->_size + distance - i], this->_ptr[this->_size - i - 1]);
-					this->_alloc.destroy(&this->_ptr[this->_size - i - 1]);
+					this->_alloc.construct(&(*(i + distance)), *i);
+					this->_alloc.destroy(&(*i));
 				}
-				while (first < last)
+				for (InputIterator i = first; i != last; i++)
 				{
-					this->_alloc.construct(&(*new_pos), *(&(*first)));
-					first++;
-					new_pos++;
+					this->_alloc.construct(&this->_ptr[index], *i);
+					index++;
 				}
 				this->_size += distance;
 			}

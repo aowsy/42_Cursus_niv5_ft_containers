@@ -6,7 +6,7 @@
 /*   By: mdelforg <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/12 11:16:07 by mdelforg          #+#    #+#             */
-/*   Updated: 2023/01/13 10:23:11 by mdelforg         ###   ########.fr       */
+/*   Updated: 2023/01/23 16:22:08 by mdelforg         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,7 +100,7 @@ namespace ft
 				return (*this->_ptr);
 			}
 
-			reference	operator->() const
+			pointer	operator->() const
 			{
 				return (&(operator*()));
 			}
@@ -185,7 +185,7 @@ namespace ft
 	template <typename IteratorL, typename IteratorR>
 	bool	operator!=(const random_access_iterator<IteratorL> &lhs, const random_access_iterator<IteratorR> &rhs)
 	{
-		return (!(lhs.base() == rhs.base()));
+		return (lhs.base() != rhs.base());
 	}
 
 // comparison '<'
@@ -206,14 +206,14 @@ namespace ft
 	template <typename IteratorL, typename IteratorR>
 	bool	operator<=(const random_access_iterator<IteratorL> &lhs, const random_access_iterator<IteratorR> &rhs)
 	{
-		return (!(lhs.base() < rhs.base()));
+		return (lhs.base() <= rhs.base());
 	}
 
 // comparison '>='
 	template <typename IteratorL, typename IteratorR>
 	bool	operator>=(const random_access_iterator<IteratorL> &lhs, const random_access_iterator<IteratorR> &rhs)
 	{
-		return (!(lhs.base() > rhs.base()));
+		return (lhs.base() >= rhs.base());
 	}
 
 // arithmetic '+'
@@ -229,6 +229,7 @@ namespace ft
 	{
 		return (lhs.base() - rhs.base());
 	}
+
 }
 
 #endif
